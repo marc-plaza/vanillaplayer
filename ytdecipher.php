@@ -30,7 +30,7 @@ function searchInFile($regex,$file) {
         return false;
     }    
 }
-if(!getContent("https://www.youtube.com/watch?v=JmcA9LIIXWw")) die();
+if(!getContent("https://www.youtube.com/watch?v=jNQXAC9IVRw")) die();
 $ythtml = file_get_contents("./ytmp");
 preg_match('/ytplayer.config = {(.*?)};/',$ythtml,$match);
 $ytconfig = json_decode('{'.$match[1].'}');
