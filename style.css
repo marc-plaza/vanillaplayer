@@ -1,0 +1,9 @@
+body {
+	color: white;
+	font-family: "Open Sans";
+	background-color: #646464; 
+}
+
+video {
+	box-shadow: 0 0 1em #000;
+}
