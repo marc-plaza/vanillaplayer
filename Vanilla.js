@@ -1,16 +1,21 @@
 (function() {
     "use strict";
     var defaultOptions = {
-        template: '<div class="player">' +
-            '<div class="playControl"></div>' +
-            '<div class="currentTime"></div>' +
-            '<div class="timeBarContainer"><div class="bufferedBar"></div><div class="timeBar"></div><div class="cursor"></div></div>' +
-            '<div class="duration"></div>' +
-            '<div class="volume"></div>' +
-            '<div class="volumeBarContainer"><div class="volumeBar"></div><div class="cursor"></div></div>' +
-            '<div class="screenControl expand"></div>' +
-            '</div>',
-        spinnerTemplate: '<div class="whirly-loader">Loading…</div>',
+        templates: {
+            player: '<div class="player">' +
+                '<div class="playControl"></div>' +
+                '<div class="currentTime"></div>' +
+                '<div class="timeBarContainer"><div class="bufferedBar"></div><div class="timeBar"></div><div class="cursor"></div></div>' +
+                '<div class="duration"></div>' +
+                '<div class="volume"></div>' +
+                '<div class="volumeBarContainer"><div class="volumeBar"></div><div class="cursor"></div></div>' +
+                '<div class="screenControl expand"></div>' +
+                '</div>',
+            spinner: '<div class="whirly-loader">Loading…</div>',
+            contextMenu: '<div data-action="speed1x">x1</div><div data-action="speed2x">x2</div><div data-action="speed3x">x3</div>'
+        },
+        useHD: false,
+        showHours: false,
         selectors: {
             playControl: ".playControl",
             volume: ".volume",
@@ -187,11 +192,11 @@
             clearInterval(this.hideTimer);
             clearInterval(this.showTimer);
             if (this.nodes.player.style.opacity === "") {
-                this.nodes.player.style.opacity = 1;
+                this.nodes.player.style.opacity = 1.0;
             }
             this.hideTimer = setInterval(function() {
                 if (self.nodes.player.style.opacity > 0) {
-                    self.nodes.player.style.opacity -= 0.1;
+                    self.nodes.player.style.opacity = parseFloat(self.nodes.player.style.opacity).toFixed(1) - 0.1;
                 } else {
                     clearInterval(self.hideTimer);
                 }
@@ -233,7 +238,12 @@
                     }
                     formats.push(format);
                 }
-                var itags = ["37", "22", "18"];
+                var itags;
+                if (self.options.useHD) {
+                    itags = ["37", "22", "18"];
+                } else {
+                    itags = ["18"];
+                }
                 var url = "";
                 for (var i = 0; i < itags.length; i++) {
                     for (var j = 0; j < formats.length; j++) {
@@ -262,7 +272,12 @@
             }
             var modulus = time;
             var string = "";
-            var length = [ /*86400,3600,*/ 60, 1];
+            var length;
+            if (this.options.showHours) {
+                length = [3600, 60, 1];
+            } else {
+                length = [60, 1];
+            }
             for (var i = 0; i < length.length; i++) {
                 var result = parseInt(Math.floor(modulus / length[i]));
                 modulus = modulus % length[i];
@@ -278,7 +293,12 @@
         },
         _stringToSeconds: function(time) {
             var seconds = 0;
-            var length = [1, 60 /*, 3600, 86400*/ ];
+            var length;
+            if (this.options.showHours) {
+                length = [1, 60, 3600];
+            } else {
+                length = [1, 60];
+            }
             time = time.split(":");
             time.reverse();
             for (var i = 0; i < time.length; i++) {
@@ -289,7 +309,7 @@
         _setupPlayer: function() {
             if (!this._setup) {
                 var div = document.createElement("div");
-                div.innerHTML = this.options.template;
+                div.innerHTML = this.options.templates.player;
                 this.nodes.player = div.firstChild;
                 this.nodes.mediaNode = this.options.replaceNode;
                 this.nodes.mediaNode.controls = false;
@@ -314,7 +334,7 @@
                 var self = this;
                 var isDraggingTime = false;
                 var isPaused = true;
-                this.nodes.volumeBar.style.width = (this.nodes.volumeBarContainer.clientWidth - this.nodes.volumeCursor.clientWidth)+"px";
+                this.nodes.volumeBar.style.width = (this.nodes.volumeBarContainer.clientWidth - this.nodes.volumeCursor.clientWidth) + "px";
                 this.nodes.mediaNode.addEventListener("play", function(evt) {
                     if (!isDraggingTime) {
                         self.nodes.playControl.classList.remove("play");
@@ -349,24 +369,23 @@
                 });
                 this.nodes.mediaNode.addEventListener("durationchange", function(evt) {
                     self.nodes.duration.innerHTML = self._secondsToString(self.nodes.mediaNode.duration);
-                    var width = "60px";
+                    var width = "72px";
                     self.nodes.currentTime.style.width = width;
                     self.nodes.duration.style.width = width;
                 });
                 this.nodes.mediaNode.addEventListener("progress", function(evt) {
                     try {
                         var index = 0;
-                        for(var i = 0;i < self.nodes.mediaNode.buffered.length;i++) {
-                            if(self.nodes.mediaNode.currentTime >= self.nodes.mediaNode.buffered.start(i) && self.nodes.mediaNode.currentTime <= self.nodes.mediaNode.buffered.end(i)) {
-                                console.log("currentTime " + self.nodes.mediaNode.currentTime);
-                                console.log("start " + self.nodes.mediaNode.buffered.start(i));
+                        for (var i = 0; i < self.nodes.mediaNode.buffered.length; i++) {
+                            if (self.nodes.mediaNode.currentTime >= self.nodes.mediaNode.buffered.start(i) && self.nodes.mediaNode.currentTime <= self.nodes.mediaNode.buffered.end(i)) {
                                 index = i;
+                                break;
                             }
                         }
                         var bufferedEnd = self.nodes.mediaNode.buffered.end(index);
                         var bufferedBegin = self.nodes.mediaNode.buffered.start(index);
                         self.nodes.bufferedBar.style.left = (bufferedBegin * self.nodes.timeBarContainer.clientWidth) / self.nodes.mediaNode.duration + "px";
-                        self.nodes.bufferedBar.style.width = ((bufferedEnd-bufferedBegin) * self.nodes.timeBarContainer.clientWidth) / self.nodes.mediaNode.duration + "px";
+                        self.nodes.bufferedBar.style.width = ((bufferedEnd - bufferedBegin) * self.nodes.timeBarContainer.clientWidth) / self.nodes.mediaNode.duration + "px";
                     } catch (e) {
 
                     }
@@ -518,11 +537,13 @@
                     this.nodes.mediaNode.parentNode.insertBefore(this.nodes.container, this.nodes.mediaNode);
                     this.nodes.container.appendChild(this.nodes.mediaNode);
                     this.nodes.container.appendChild(this.nodes.player);
+                    this.nodes.container.tabIndex = 0;
+                    this.nodes.mediaNode.tabIndex = 0;
                     this.nodes.mediaNode.setAttribute("width", "100%");
                     this.nodes.mediaNode.setAttribute("height", "100%");
-                    this.nodes.player.style.width = this.nodes.mediaNode.offsetWidth * 0.8 + "px";
-                    this.nodes.player.style.top = this.nodes.mediaNode.offsetHeight - this.nodes.player.offsetHeight - (this.nodes.player.offsetHeight / 2) + "px";
-                    this.nodes.player.style.left = this.nodes.mediaNode.offsetWidth / 2 - this.nodes.player.offsetWidth / 2 + "px";
+                    this.nodes.player.style.width = this.nodes.container.offsetWidth * 0.8 + "px";
+                    this.nodes.player.style.top = this.nodes.container.offsetHeight - this.nodes.player.offsetHeight - (this.nodes.player.offsetHeight / 2) + "px";
+                    this.nodes.player.style.left = this.nodes.container.offsetWidth / 2 - this.nodes.player.offsetWidth / 2 + "px";
                     this.nodes.timeBarContainer.style.width = this.nodes.mediaNode.clientWidth * 0.8 -
                         (
                             this.nodes.playControl.clientWidth +
@@ -554,14 +575,49 @@
                     this.nodes.container.addEventListener("mouseleave", function() {
                         self.hide();
                     });
-                    this.nodes.container.addEventListener("click", function(evt) {
-                        if (self.nodes.mediaNode.paused) {
-                            self.nodes.mediaNode.play();
+                    var contextmenu = document.createElement("div");
+                    contextmenu.innerHTML = self.options.templates.contextMenu;
+                    this.nodes.contextmenu = contextmenu;
+                    contextmenu.style.position = "absolute";
+                    contextmenu.style.display = "none";
+                    contextmenu.setAttribute("class", "contextmenu");
+                    this.nodes.container.appendChild(contextmenu);
+                    this.nodes.mediaNode.addEventListener("contextmenu", function(evt) {
+                        evt.preventDefault();
+                        contextmenu.style.display = "block";
+                        contextmenu.style.left = evt.layerX + "px";
+                        contextmenu.style.top = evt.layerY + "px";
+                    });
+                    var menus = contextmenu.querySelectorAll("div");
+                    for (var i = 0; i < menus.length; i++) {
+                        menus[i].addEventListener("click", function(evt) {
+                            var action = evt.target.getAttribute("data-action") || "";
+                            var speed = action.match(/speed(\d)x/);
+                            if (speed !== null) {
+                                self.setSpeed(speed[1]);
+                            }
+                            contextmenu.style.display = "none";
+                            evt.stopImmediatePropagation();
+                        });
+                    }
+                    this.nodes.container.addEventListener("focus", function(evt) {
+                        self.nodes.mediaNode.focus();
+                    });
+                    this.nodes.mediaNode.addEventListener("blur", function(evt) {
+                        contextmenu.style.display = "none";
+                    });
+                    this.nodes.mediaNode.addEventListener("click", function(evt) {
+                        if (contextmenu.style.display === "block") {
+                            contextmenu.style.display = "none";
                         } else {
-                            self.nodes.mediaNode.pause();
+                            if (self.nodes.mediaNode.paused) {
+                                self.nodes.mediaNode.play();
+                            } else {
+                                self.nodes.mediaNode.pause();
+                            }
                         }
                     });
-                    this.nodes.container.addEventListener("wheel", function(evt) {
+                    this.nodes.mediaNode.addEventListener("wheel", function(evt) {
                         var delta = -evt.deltaY / 2000;
                         self.show();
                         if (self.nodes.mediaNode.volume + delta > 1) {
@@ -574,7 +630,7 @@
                     });
                     var spinner = document.createElement("div");
                     this.nodes.container.appendChild(spinner);
-                    spinner.innerHTML = this.options.spinnerTemplate;
+                    spinner.innerHTML = this.options.templates.spinner;
                     spinner.style.position = "absolute";
                     spinner.style.left = this.nodes.container.getBoundingClientRect().width / 2 - spinner.getBoundingClientRect().width / 2 + "px";
                     spinner.style.top = this.nodes.container.getBoundingClientRect().height / 2 - spinner.getBoundingClientRect().height / 2 + "px";
