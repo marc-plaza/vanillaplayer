@@ -12,7 +12,7 @@
                 '<div class="screenControl expand"></div>' +
                 '</div>',
             spinner: '<div class="whirly-loader">Loading…</div>',
-            contextMenu: '<div data-action="speed1x">x1</div><div data-action="speed2x">x2</div><div data-action="speed3x">x3</div>'
+            contextMenu: '<div data-action="speed1x">x1</div><div data-action="speed1.25x">x1.25</div><div data-action="speed1.5x">x1.5</div><div data-action="speed2x">x2</div><div data-action="speed3x">x3</div>'
         },
         useHD: false,
         showHours: false,
@@ -538,7 +538,6 @@
                     this.nodes.container.appendChild(this.nodes.mediaNode);
                     this.nodes.container.appendChild(this.nodes.player);
                     this.nodes.container.tabIndex = 0;
-                    this.nodes.mediaNode.tabIndex = 0;
                     this.nodes.mediaNode.setAttribute("width", "100%");
                     this.nodes.mediaNode.setAttribute("height", "100%");
                     this.nodes.player.style.width = this.nodes.container.offsetWidth * 0.8 + "px";
@@ -592,7 +591,7 @@
                     for (var i = 0; i < menus.length; i++) {
                         menus[i].addEventListener("click", function(evt) {
                             var action = evt.target.getAttribute("data-action") || "";
-                            var speed = action.match(/speed(\d)x/);
+                            var speed = action.match(/speed(\d\.?\d*)x/);
                             if (speed !== null) {
                                 self.setSpeed(speed[1]);
                             }
@@ -600,13 +599,10 @@
                             evt.stopImmediatePropagation();
                         });
                     }
-                    this.nodes.container.addEventListener("focus", function(evt) {
-                        self.nodes.mediaNode.focus();
+                    this.nodes.mediaNode.addEventListener("focus",function(evt) {
+                        self.nodes.container.focus();
                     });
-                    this.nodes.mediaNode.addEventListener("blur", function(evt) {
-                        contextmenu.style.display = "none";
-                    });
-                    this.nodes.mediaNode.addEventListener("click", function(evt) {
+                    this.nodes.container.addEventListener("click", function(evt) {
                         if (contextmenu.style.display === "block") {
                             contextmenu.style.display = "none";
                         } else {
@@ -616,6 +612,9 @@
                                 self.nodes.mediaNode.pause();
                             }
                         }
+                    });
+                    this.nodes.container.addEventListener("blur",function(evt) {
+                         contextmenu.style.display = "none";
                     });
                     this.nodes.mediaNode.addEventListener("wheel", function(evt) {
                         var delta = -evt.deltaY / 2000;
