@@ -12,7 +12,7 @@
                 '<div class="screenControl expand"></div>' +
                 '</div>',
             spinner: '<div class="whirly-loader">Loading…</div>',
-            contextMenu: '<div data-action="speed1x">x1</div><div data-action="speed1.25x">x1.25</div><div data-action="speed1.5x">x1.5</div><div data-action="speed2x">x2</div><div data-action="speed3x">x3</div>'
+            contextMenu: '<div class="separator">Set speed at</div><div data-action="speed1x">x1</div><div data-action="speed1.25x">x1.25</div><div data-action="speed1.5x">x1.5</div><div data-action="speed2x">x2</div>'
         },
         useHD: false,
         showHours: false,
@@ -131,7 +131,7 @@
             if (match.test(source)) {
                 this._getYoutubeLink(match.exec(source)[1]);
             } else {
-                this.nodes.mediaNode.setAttribute("src", source);
+                this.nodes.mediaNode.src = source;
             }
         },
         getSources: function() {
@@ -145,26 +145,54 @@
         setSources: function(sources) {
             this.pause();
             this.setCurrentTime(0);
-            this.nodes.mediaNode.innerHTML = '';
+            var currentSources = this.nodes.mediaNode.querySelectorAll("source");
+            for (var i = 0; i < currentSources.length; i++) {
+                this.nodes.mediaNode.removeChild(currentSources[i]);
+            }
             if (!Array.isArray(sources)) {
                 sources = [sources];
             }
             for (var i = 0; i < sources.length; i++) {
                 var sourceNode = document.createElement("source");
-                sourceNode.setAttribute("src", sources[i]);
+                sourceNode.src = sources[i];
                 this.nodes.mediaNode.appendChild(sourceNode);
             }
-            this.nodes.mediaNode.setAttribute("src", sources[0]);
+            this.nodes.mediaNode.src = sources[0];
+        },
+        getTracks: function() {
+            return this.nodes.mediaNode.textTracks;
+        },
+        setTracks: function(tracks) {
+            var currentTracks = this.nodes.mediaNode.querySelectorAll("track");
+            for (var i = 0; i < currentTracks.length; i++) {
+                this.nodes.mediaNode.removeChild(currentTracks[i]);
+            }
+            var currentTracksMenu = this.nodes.contextmenu.querySelectorAll("div[data-track]");
+            for (var i = 0; i < currentTracksMenu.length; i++) {
+                this.nodes.contextmenu.removeChild(currentTracksMenu[i]);
+            }
+            for (var i = 0; i < tracks.length; i++) {
+                var track = document.createElement("track");
+                track.kind = tracks[i].kind;
+                track.language = tracks[i].language;
+                track.label = tracks[i].label || '';
+                track.id = tracks[i].id || '';
+                track.src = tracks[i].src;
+                this.nodes.mediaNode.appendChild(track);
+            }
         },
         on: function(event, callback) {
-            this.nodes.mediaNode.addEventListener(event, callback);
+            this.nodes.mediaNode.addEventListener(event, callback, true);
             var self = this;
             return {
                 callback: callback,
                 remove: function() {
-                    self.nodes.mediaNode.removeEventListener(event, callback);
+                    self.nodes.mediaNode.removeEventListener(event, callback, true);
                 }
             };
+        },
+        emit: function(event) {
+            self.nodes.mediaNode.dispatchEvent(new Event(event));
         },
         show: function() {
             var self = this;
@@ -206,6 +234,108 @@
             this.onDestroy();
             this.nodes.player.parentNode.removeChild(this.nodes.player);
             delete Vanilla.instances[this.id];
+        },
+        resize: function(width, height) {
+            if (width === undefined || height === undefined) {
+                return;
+            }
+            if (this.nodes.mediaNode.nodeName === "VIDEO") {
+                this.nodes.container.style.width = width + "px";
+                this.nodes.container.style.height = height + "px";
+                this.nodes.player.style.width = this.nodes.container.offsetWidth * 0.8 + "px";
+                this.nodes.player.style.top = this.nodes.container.offsetHeight - this.nodes.player.offsetHeight * 2 - 10 + "px";
+                this.nodes.player.style.left = this.nodes.container.offsetWidth / 2 - this.nodes.player.offsetWidth / 2 + "px";
+                this.nodes.timeBarContainer.style.width = this.nodes.mediaNode.clientWidth * 0.8 -
+                    (
+                        this.nodes.playControl.clientWidth +
+                        this.nodes.currentTime.clientWidth +
+                        this.nodes.duration.clientWidth +
+                        this.nodes.volume.clientWidth +
+                        this.nodes.volumeBarContainer.clientWidth +
+                        this.nodes.screenControl.clientWidth +
+                        parseInt(getComputedStyle(this.nodes.playControl).getPropertyValue("margin-left").replace("px", "")) +
+                        parseInt(getComputedStyle(this.nodes.currentTime).getPropertyValue("margin-left").replace("px", "")) +
+                        parseInt(getComputedStyle(this.nodes.duration).getPropertyValue("margin-left").replace("px", "")) +
+                        parseInt(getComputedStyle(this.nodes.volume).getPropertyValue("margin-left").replace("px", "")) +
+                        parseInt(getComputedStyle(this.nodes.volumeBarContainer).getPropertyValue("margin-left").replace("px", "")) +
+                        parseInt(getComputedStyle(this.nodes.screenControl).getPropertyValue("margin-left").replace("px", "")) +
+                        parseInt(getComputedStyle(this.nodes.timeBarContainer).getPropertyValue("margin-left").replace("px", "")) +
+                        parseInt(getComputedStyle(this.nodes.playControl).getPropertyValue("margin-right").replace("px", "")) +
+                        parseInt(getComputedStyle(this.nodes.currentTime).getPropertyValue("margin-right").replace("px", "")) +
+                        parseInt(getComputedStyle(this.nodes.duration).getPropertyValue("margin-right").replace("px", "")) +
+                        parseInt(getComputedStyle(this.nodes.volume).getPropertyValue("margin-right").replace("px", "")) +
+                        parseInt(getComputedStyle(this.nodes.volumeBarContainer).getPropertyValue("margin-right").replace("px", "")) +
+                        parseInt(getComputedStyle(this.nodes.screenControl).getPropertyValue("margin-right").replace("px", "")) +
+                        parseInt(getComputedStyle(this.nodes.timeBarContainer).getPropertyValue("margin-right").replace("px", ""))
+                    ) + "px";
+            } else {
+                this.nodes.player.style.width = width + "px";
+                this.nodes.player.style.height = height + "px";
+                this.nodes.timeBarContainer.style.width = this.nodes.player.clientWidth -
+                    (
+                        this.nodes.playControl.clientWidth +
+                        this.nodes.currentTime.clientWidth +
+                        this.nodes.duration.clientWidth +
+                        this.nodes.volume.clientWidth +
+                        this.nodes.volumeBarContainer.clientWidth +
+                        this.nodes.screenControl.clientWidth +
+                        parseInt(getComputedStyle(this.nodes.playControl).getPropertyValue("margin-left").replace("px", "")) +
+                        parseInt(getComputedStyle(this.nodes.currentTime).getPropertyValue("margin-left").replace("px", "")) +
+                        parseInt(getComputedStyle(this.nodes.duration).getPropertyValue("margin-left").replace("px", "")) +
+                        parseInt(getComputedStyle(this.nodes.volume).getPropertyValue("margin-left").replace("px", "")) +
+                        parseInt(getComputedStyle(this.nodes.volumeBarContainer).getPropertyValue("margin-left").replace("px", "")) +
+                        parseInt(getComputedStyle(this.nodes.screenControl).getPropertyValue("margin-left").replace("px", "")) +
+                        parseInt(getComputedStyle(this.nodes.timeBarContainer).getPropertyValue("margin-left").replace("px", "")) +
+                        parseInt(getComputedStyle(this.nodes.playControl).getPropertyValue("margin-right").replace("px", "")) +
+                        parseInt(getComputedStyle(this.nodes.currentTime).getPropertyValue("margin-right").replace("px", "")) +
+                        parseInt(getComputedStyle(this.nodes.duration).getPropertyValue("margin-right").replace("px", "")) +
+                        parseInt(getComputedStyle(this.nodes.volume).getPropertyValue("margin-right").replace("px", "")) +
+                        parseInt(getComputedStyle(this.nodes.volumeBarContainer).getPropertyValue("margin-right").replace("px", "")) +
+                        parseInt(getComputedStyle(this.nodes.screenControl).getPropertyValue("margin-right").replace("px", "")) +
+                        parseInt(getComputedStyle(this.nodes.timeBarContainer).getPropertyValue("margin-right").replace("px", ""))
+                    ) + "px";
+            }
+        },
+        _addTracksToContextMenu: function() {
+            var self = this;
+            if (this.nodes.mediaNode.textTracks.length > 0 && this.nodes.contextmenu) {
+                var submenu = document.createElement("div");
+                submenu.innerHTML = "Subtitles";
+                submenu.classList.add("separator");
+                this.nodes.contextmenu.appendChild(submenu);
+                var suboff = document.createElement("div");
+                suboff.innerHTML = "Off";
+                suboff.addEventListener("click", function(evt) {
+                    for (var i = 0; i < self.nodes.mediaNode.textTracks.length; i++) {
+                        self.nodes.mediaNode.textTracks[i].mode = 'hidden';
+                    }
+                    evt.stopImmediatePropagation();
+                });
+                this.nodes.contextmenu.appendChild(suboff);
+                for (var i = 0; i < this.nodes.mediaNode.textTracks.length; i++) {
+                    this.nodes.mediaNode.textTracks[i].mode = 'hidden';
+                    var track = document.createElement("div");
+                    track.innerHTML = this.nodes.mediaNode.textTracks[i].label;
+                    track.setAttribute("data-track", i);
+                    track.addEventListener("click", function(evt) {
+                        self.nodes.mediaNode.textTracks[track.getAttribute("data-track")].mode = 'showing';
+                        self.nodes.contextmenu.style.display = "none";
+                        evt.stopImmediatePropagation();
+                    }, true);
+                    this.nodes.contextmenu.appendChild(track);
+                }
+            }
+        },
+        showMessage: function(message) {
+            if (!this.nodes.message) {
+                this.nodes.message = document.createElement("div");
+                this.nodes.container.appendChild(this.nodes.message);
+            }
+            this.nodes.message.innerHTML = message;
+            this.nodes.message.style.position = "absolute";
+            this.nodes.message.style.left = this.nodes.container.getBoundingClientRect().width / 2 - this.nodes.message.getBoundingClientRect().width / 2 + "px";
+            this.nodes.message.style.top = this.nodes.container.getBoundingClientRect().height / 2 - this.nodes.message.getBoundingClientRect().height / 2 + "px";
+            this.nodes.spinner.style.display = "none";
         },
         _getYoutubeLink: function(id) {
             var self = this;
@@ -258,7 +388,7 @@
                         }
                     }
                     if (url !== "") {
-                        self.nodes.mediaNode.setAttribute("src", url);
+                        self.nodes.mediaNode.src = url;
                         self.nodes.spinner.style.display = "none";
                         break;
                     }
@@ -322,8 +452,8 @@
                     Vanilla.instancesIncr++;
                 }
                 this.nodes.mediaNode.removeAttribute("id");
-                this.nodes.player.setAttribute("id", id);
-                this.nodes.player.setAttribute("class", this.nodes.player.getAttribute("class") + " " + this.nodes.mediaNode.nodeName.toLowerCase());
+                this.nodes.player.id = id;
+                this.nodes.player.classList.add(this.nodes.mediaNode.nodeName.toLowerCase());
                 this.nodes.player.addEventListener("click", function(evt) {
                     evt.stopImmediatePropagation();
                 });
@@ -340,13 +470,13 @@
                         self.nodes.playControl.classList.remove("play");
                         self.nodes.playControl.classList.add("pause");
                     }
-                });
+                }, true);
                 this.nodes.mediaNode.addEventListener("pause", function(evt) {
                     if (!isDraggingTime) {
                         self.nodes.playControl.classList.remove("pause");
                         self.nodes.playControl.classList.add("play");
                     }
-                });
+                }, true);
                 this.nodes.mediaNode.addEventListener("volumechange", function(evt) {
                     self.nodes.volumeBar.style.width = ((self.nodes.mediaNode.volume * self.nodes.volumeBarContainer.clientWidth) / 1.0) - ((self.nodes.mediaNode.volume * self.nodes.volumeCursor.clientWidth) / 1.0) + "px";
                     if (!self.nodes.mediaNode.muted) {
@@ -362,17 +492,17 @@
                             }
                         }
                     }
-                });
+                }, true);
                 this.nodes.mediaNode.addEventListener("timeupdate", function(evt) {
                     self.nodes.timeBar.style.width = ((self.nodes.mediaNode.currentTime * self.nodes.timeBarContainer.clientWidth) / self.nodes.mediaNode.duration) - ((self.nodes.mediaNode.currentTime * self.nodes.timeCursor.clientWidth) / self.nodes.mediaNode.duration) + "px";
                     self.nodes.currentTime.innerHTML = self._secondsToString(self.nodes.mediaNode.currentTime);
-                });
+                }, true);
                 this.nodes.mediaNode.addEventListener("durationchange", function(evt) {
                     self.nodes.duration.innerHTML = self._secondsToString(self.nodes.mediaNode.duration);
                     var width = "72px";
                     self.nodes.currentTime.style.width = width;
                     self.nodes.duration.style.width = width;
-                });
+                }, true);
                 this.nodes.mediaNode.addEventListener("progress", function(evt) {
                     try {
                         var index = 0;
@@ -389,7 +519,10 @@
                     } catch (e) {
 
                     }
-                });
+                }, true);
+                this.nodes.mediaNode.addEventListener("error",function(evt) {
+                    self.showMessage("error");
+                },true);
                 this.nodes.playControl.addEventListener("click", function(evt) {
                     if (!self.nodes.mediaNode.paused) {
                         self.nodes.mediaNode.pause();
@@ -397,24 +530,24 @@
                         self.nodes.mediaNode.play();
                     }
                     evt.stopImmediatePropagation();
-                });
+                }, true);
                 this.nodes.timeBarContainer.addEventListener("click", function(evt) {
                     var position = evt.clientX - self.nodes.timeBarContainer.getBoundingClientRect().left;
                     self.nodes.mediaNode.currentTime = (position * self.nodes.mediaNode.duration) / self.nodes.timeBarContainer.clientWidth;
                     evt.stopImmediatePropagation();
-                });
+                }, true);
                 this.nodes.volumeBarContainer.addEventListener("click", function(evt) {
                     var position = evt.clientX - self.nodes.volumeBarContainer.getBoundingClientRect().left;
                     self.nodes.mediaNode.volume = position / self.nodes.volumeBarContainer.clientWidth;
                     evt.stopImmediatePropagation();
-                });
+                }, true);
                 var hoverTime = document.createElement("div");
-                this.nodes.hoverTime = hoverTime.setAttribute("class", "hoverTime");
+                this.nodes.hoverTime = hoverTime.classList.add("hoverTime");
                 this.nodes.timeBarContainer.addEventListener("mousedown", function(evt) {
                     hoverTime.innerHTML = '';
                     isDraggingTime = true;
                     isPaused = self.nodes.mediaNode.paused;
-                });
+                }, true);
                 this.nodes.timeBarContainer.insertBefore(hoverTime, this.nodes.bufferedBar);
                 this.nodes.timeBarContainer.addEventListener("mousemove", function(evt) {
                     if (!isDraggingTime) {
@@ -427,13 +560,13 @@
                             hoverTime.innerHTML = '';
                         }
                     }
-                });
+                }, true);
                 this.nodes.timeBarContainer.addEventListener("mouseleave", function(evt) {
                     hoverTime.innerHTML = '';
-                });
+                }, true);
                 hoverTime.addEventListener("mouseenter", function(evt) {
                     hoverTime.innerHTML = '';
-                });
+                }, true);
                 var timeMouseMoveListener = function(evt) {
                     if (isDraggingTime && evt.button === 0) {
                         if (isPaused === false) {
@@ -458,14 +591,13 @@
                     }
                 };
                 var keyDownListener = function(evt) {
-                    // if (evt.keyCode === 32) {
-                    //     self.show();
-                    //     if (self.nodes.mediaNode.paused) {
-                    //         self.nodes.mediaNode.play();
-                    //     } else {
-                    //         self.nodes.mediaNode.pause();
-                    //     }
-                    // }
+                    if (evt.keyCode === 32 && document.activeElement === self.nodes.mediaNode) {
+                        if (self.nodes.mediaNode.paused) {
+                            self.nodes.mediaNode.play();
+                        } else {
+                            self.nodes.mediaNode.pause();
+                        }
+                    }
                     if (evt.keyCode === 39) {
                         self.show();
                         if (self.nodes.mediaNode.currentTime + 2 < self.nodes.mediaNode.duration) {
@@ -483,13 +615,13 @@
                         }
                     }
                 };
-                window.addEventListener("keydown", keyDownListener);
-                window.addEventListener("mousemove", timeMouseMoveListener);
-                window.addEventListener("mouseup", timeMouseUpListener);
+                window.addEventListener("keydown", keyDownListener, true);
+                window.addEventListener("mousemove", timeMouseMoveListener, true);
+                window.addEventListener("mouseup", timeMouseUpListener, true);
                 var isDraggingVolume = false;
                 this.nodes.volumeBarContainer.addEventListener("mousedown", function(evt) {
                     isDraggingVolume = true;
-                });
+                }, true);
                 this.nodes.volume.addEventListener("click", function() {
                     self.nodes.mediaNode.muted = !self.nodes.mediaNode.muted;
                     self.nodes.volume.classList.remove(self.nodes.volume.classList[1]);
@@ -506,7 +638,7 @@
                             self.nodes.volume.classList.add("min");
                         }
                     }
-                });
+                }, true);
                 var volumeMouseMoveListener = function(evt) {
                     if (isDraggingVolume && evt.button === 0) {
                         var position = evt.clientX - self.nodes.volumeBarContainer.getBoundingClientRect().left;
@@ -530,63 +662,41 @@
                 if (this.nodes.mediaNode.nodeName === "VIDEO") {
                     this.fullscreen = false;
                     this.nodes.container = document.createElement("div");
-                    this.nodes.container.setAttribute("class", "VanillaPlayerContainer");
+                    this.nodes.container.classList.add("VanillaPlayerContainer");
                     this.nodes.container.style.width = this.nodes.mediaNode.offsetWidth + "px";
                     this.nodes.container.style.height = this.nodes.mediaNode.offsetHeight + "px";
                     this.nodes.container.style.position = "relative";
                     this.nodes.mediaNode.parentNode.insertBefore(this.nodes.container, this.nodes.mediaNode);
                     this.nodes.container.appendChild(this.nodes.mediaNode);
                     this.nodes.container.appendChild(this.nodes.player);
-                    this.nodes.container.tabIndex = 0;
-                    this.nodes.mediaNode.setAttribute("width", "100%");
-                    this.nodes.mediaNode.setAttribute("height", "100%");
-                    this.nodes.player.style.width = this.nodes.container.offsetWidth * 0.8 + "px";
-                    this.nodes.player.style.top = this.nodes.container.offsetHeight - this.nodes.player.offsetHeight - (this.nodes.player.offsetHeight / 2) + "px";
-                    this.nodes.player.style.left = this.nodes.container.offsetWidth / 2 - this.nodes.player.offsetWidth / 2 + "px";
-                    this.nodes.timeBarContainer.style.width = this.nodes.mediaNode.clientWidth * 0.8 -
-                        (
-                            this.nodes.playControl.clientWidth +
-                            this.nodes.currentTime.clientWidth +
-                            this.nodes.duration.clientWidth +
-                            this.nodes.volume.clientWidth +
-                            this.nodes.volumeBarContainer.clientWidth +
-                            this.nodes.screenControl.clientWidth +
-                            parseInt(getComputedStyle(this.nodes.playControl).getPropertyValue("margin-left").replace("px", "")) +
-                            parseInt(getComputedStyle(this.nodes.currentTime).getPropertyValue("margin-left").replace("px", "")) +
-                            parseInt(getComputedStyle(this.nodes.duration).getPropertyValue("margin-left").replace("px", "")) +
-                            parseInt(getComputedStyle(this.nodes.volume).getPropertyValue("margin-left").replace("px", "")) +
-                            parseInt(getComputedStyle(this.nodes.volumeBarContainer).getPropertyValue("margin-left").replace("px", "")) +
-                            parseInt(getComputedStyle(this.nodes.screenControl).getPropertyValue("margin-left").replace("px", "")) +
-                            parseInt(getComputedStyle(this.nodes.timeBarContainer).getPropertyValue("margin-left").replace("px", "")) +
-                            parseInt(getComputedStyle(this.nodes.playControl).getPropertyValue("margin-right").replace("px", "")) +
-                            parseInt(getComputedStyle(this.nodes.currentTime).getPropertyValue("margin-right").replace("px", "")) +
-                            parseInt(getComputedStyle(this.nodes.duration).getPropertyValue("margin-right").replace("px", "")) +
-                            parseInt(getComputedStyle(this.nodes.volume).getPropertyValue("margin-right").replace("px", "")) +
-                            parseInt(getComputedStyle(this.nodes.volumeBarContainer).getPropertyValue("margin-right").replace("px", "")) +
-                            parseInt(getComputedStyle(this.nodes.screenControl).getPropertyValue("margin-right").replace("px", "")) +
-                            parseInt(getComputedStyle(this.nodes.timeBarContainer).getPropertyValue("margin-right").replace("px", ""))
-                        ) + "px";
+                    this.nodes.mediaNode.style.width = "100%";
+                    this.nodes.mediaNode.style.height = "100%";
+                    this.nodes.mediaNode.tabIndex = 0;
+                    this.nodes.mediaNode.removeAttribute("width");
+                    this.nodes.mediaNode.removeAttribute("height");
+                    this.resize(this.nodes.mediaNode.offsetWidth, this.nodes.mediaNode.offsetHeight);
                     this.nodes.player.style.position = "absolute";
                     this.nodes.player.style.opacity = 0;
                     this.nodes.container.addEventListener("mousemove", function() {
                         self.show();
-                    });
+                    }, true);
                     this.nodes.container.addEventListener("mouseleave", function() {
                         self.hide();
-                    });
+                    }, true);
                     var contextmenu = document.createElement("div");
                     contextmenu.innerHTML = self.options.templates.contextMenu;
                     this.nodes.contextmenu = contextmenu;
                     contextmenu.style.position = "absolute";
                     contextmenu.style.display = "none";
-                    contextmenu.setAttribute("class", "contextmenu");
+                    contextmenu.classList.add("contextmenu");
                     this.nodes.container.appendChild(contextmenu);
                     this.nodes.mediaNode.addEventListener("contextmenu", function(evt) {
+                        self.nodes.mediaNode.focus();
                         evt.preventDefault();
                         contextmenu.style.display = "block";
                         contextmenu.style.left = evt.layerX + "px";
                         contextmenu.style.top = evt.layerY + "px";
-                    });
+                    }, true);
                     var menus = contextmenu.querySelectorAll("div");
                     for (var i = 0; i < menus.length; i++) {
                         menus[i].addEventListener("click", function(evt) {
@@ -597,12 +707,23 @@
                             }
                             contextmenu.style.display = "none";
                             evt.stopImmediatePropagation();
-                        });
+                        }, true);
                     }
-                    this.nodes.mediaNode.addEventListener("focus",function(evt) {
-                        self.nodes.container.focus();
+                    this._addTracksToContextMenu();
+                    var isCursorIn = false;
+                    this.nodes.container.addEventListener("mouseleave", function(evt) {
+                        isCursorIn = false;
                     });
-                    this.nodes.container.addEventListener("click", function(evt) {
+                    this.nodes.container.addEventListener("mouseover", function(evt) {
+                        isCursorIn = true;
+                    });
+                    this.nodes.mediaNode.addEventListener("blur", function(evt) {
+                        if (!isCursorIn) {
+                            contextmenu.style.display = "none";
+                        }
+                    });
+                    this.nodes.mediaNode.addEventListener("click", function(evt) {
+                        self.nodes.mediaNode.focus();
                         if (contextmenu.style.display === "block") {
                             contextmenu.style.display = "none";
                         } else {
@@ -612,9 +733,6 @@
                                 self.nodes.mediaNode.pause();
                             }
                         }
-                    });
-                    this.nodes.container.addEventListener("blur",function(evt) {
-                         contextmenu.style.display = "none";
                     });
                     this.nodes.mediaNode.addEventListener("wheel", function(evt) {
                         var delta = -evt.deltaY / 2000;
@@ -626,7 +744,7 @@
                         } else {
                             self.nodes.mediaNode.volume += delta;
                         }
-                    });
+                    }, true);
                     var spinner = document.createElement("div");
                     this.nodes.container.appendChild(spinner);
                     spinner.innerHTML = this.options.templates.spinner;
@@ -637,25 +755,25 @@
                     this.nodes.spinner = spinner;
                     this.nodes.mediaNode.addEventListener("seeking", function(evt) {
                         spinner.style.display = "block";
-                    });
+                    }, true);
                     this.nodes.mediaNode.addEventListener("seeked", function(evt) {
                         spinner.style.display = "none";
-                    });
+                    }, true);
                     this.nodes.mediaNode.addEventListener("waiting", function(evt) {
                         spinner.style.display = "block";
-                    });
+                    }, true);
                     this.nodes.mediaNode.addEventListener("playing", function(evt) {
                         spinner.style.display = "none";
-                    });
+                    }, true);
                     this.nodes.player.addEventListener("mouseenter", function() {
                         clearTimeout(self.idleTimer);
-                    });
+                    }, true);
                     this.nodes.player.addEventListener("mouseleave", function() {
                         self.idleTimer = setTimeout(function() {
                             self.hide();
                         }, 2000);
                         hoverTime.innerHTML = '';
-                    });
+                    }, true);
                     this.nodes.screenControl.addEventListener("click", function() {
                         if (!document.fullscreenElement && !document.mozFullScreenElement && !document.webkitFullscreenElement && !document.msFullscreenElement) {
                             if (self.nodes.container.requestFullscreen) {
@@ -678,7 +796,7 @@
                                 document.msExitFullscreen();
                             }
                         }
-                    });
+                    }, true);
                     var reposition = function() {
                         self.fullscreen = !self.fullscreen;
                         self.nodes.screenControl.classList.remove(self.nodes.screenControl.classList[1]);
@@ -686,22 +804,22 @@
                         if (self.fullscreen) {
                             self.nodes.screenControl.classList.add("compress");
                             self.nodes.player.style["z-index"] = 2147483647;
-                            self.nodes.player.style.top = screen.height - self.nodes.player.offsetHeight - (self.nodes.player.offsetHeight / 2) + "px";
+                            self.nodes.player.style.top = screen.height - self.nodes.player.offsetHeight - self.nodes.player.offsetHeight * 2 - 10 + "px";
                             self.nodes.player.style.left = screen.width / 2 - self.nodes.player.offsetWidth / 2 + "px";
                         } else {
                             self.nodes.screenControl.classList.add("expand");
                             self.nodes.player.style["z-index"] = 0;
-                            self.nodes.player.style.top = self.nodes.container.offsetHeight - self.nodes.player.offsetHeight - (self.nodes.player.offsetHeight / 2) + "px";
+                            self.nodes.player.style.top = self.nodes.container.offsetHeight - self.nodes.player.offsetHeight - self.nodes.player.offsetHeight * 2 - 10 + "px";
                             self.nodes.player.style.left = self.nodes.container.offsetWidth / 2 - self.nodes.player.offsetWidth / 2 + "px";
                         }
                         self.nodes.spinner.style.left = self.nodes.container.getBoundingClientRect().width / 2 - self.nodes.spinner.getBoundingClientRect().width / 2 + "px";
                         self.nodes.spinner.style.top = self.nodes.container.getBoundingClientRect().height / 2 - self.nodes.spinner.getBoundingClientRect().height / 2 + "px";
                         self.nodes.player.position = "absolute";
                     };
-                    document.addEventListener("mozfullscreenchange", reposition);
-                    document.addEventListener("webkitfullscreenchange", reposition);
-                    document.addEventListener("MSFullscreenChange", reposition);
-                    document.addEventListener("fullscreenchange", reposition);
+                    document.addEventListener("mozfullscreenchange", reposition, true);
+                    document.addEventListener("webkitfullscreenchange", reposition, true);
+                    document.addEventListener("MSFullscreenChange", reposition, true);
+                    document.addEventListener("fullscreenchange", reposition, true);
                     this.onDestroy = function() {
                         window.removeEventListener("mousemove", timeMouseMoveListener);
                         window.removeEventListener("mouseup", timeMouseUpListener);
@@ -723,7 +841,7 @@
                     this.nodes.player.appendChild(this.nodes.mediaNode);
                     this.nodes.player.addEventListener("mouseleave", function() {
                         hoverTime.innerHTML = '';
-                    });
+                    }, true);
                     this.onDestroy = function() {
                         window.removeEventListener("mousemove", timeMouseMoveListener);
                         window.removeEventListener("mouseup", timeMouseUpListener);

@@ -199,10 +199,16 @@ video::-webkit-media-controls, video::-moz-media-controls, video::-ms-media-cont
 
 .contextmenu div {
   width: 100%;
+  user-select: none;
+  cursor: default;
 }
 
-.contextmenu div:hover {
-    background-color: rgba(11,11,11,0.7); 
+.contextmenu div:not(.separator):hover {
+  background-color: rgba(11,11,11,0.7); 
+}
+
+.contextmenu .separator {
+  background-color: rgba(44,44,44,0.7); 
 }
 
 /* Spinner */

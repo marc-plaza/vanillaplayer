@@ -9,9 +9,11 @@
     <body>
         <div style="width:854px;margin-left: auto;margin-right: auto;text-align: center">
             <h1>VanillaPlayer</h1>
-            <video id="myPlayer" width="854px" height="480px" controls="true"></video>
+            <video id="myPlayer" src="bal" width="854px" height="480px" controls="true">
+                <track label="English" kind="subtitles" src="sintel_en.vtt" srclang="en"></track>
+            </video>
             <br />
-            <input type="text" style="width: 320px" id="url" value="https://www.youtube.com/watch?v=bmtbg5b7_Aw" /><button id="urlButton">Change URL</button>
+            <input type="text" style="width: 320px" id="url" value="" /><button id="urlButton">Change URL</button>
         </div>
         <script src="Vanilla.js"></script>
         <script>
@@ -27,8 +29,6 @@
                         Vanilla.instances.myPlayer.setSource(urlInput.value);
                     }
                 };
-                Vanilla.instances.myPlayer.setSource(urlInput.value);
-                window.removeEventListener("DOMContentLoaded", this);
             });
         </script>
         <script src="ytdecipher.php"></script>
