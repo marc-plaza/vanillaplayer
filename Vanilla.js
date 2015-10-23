@@ -34,7 +34,7 @@
     window.Vanilla = {
         instances: {},
         instancesIncr: 0,
-        proxyURL: "/vanillaplayer/proxy.php?url=",
+        proxyURL: "proxy.php?url=",
         replace: function(selector) {
             var node = document.querySelector(selector);
             return new Vanilla.Player({
@@ -521,7 +521,7 @@
                     }
                 }, true);
                 this.nodes.mediaNode.addEventListener("error",function(evt) {
-                    self.showMessage("error");
+                    //self.showMessage("error");
                 },true);
                 this.nodes.playControl.addEventListener("click", function(evt) {
                     if (!self.nodes.mediaNode.paused) {
