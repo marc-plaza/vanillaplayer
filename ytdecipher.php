@@ -3,13 +3,12 @@ error_reporting(0);
 header("Content-Type: text/javascript");
 $tmpFile = "./yt/ytmp";
 $decodeFile = "./yt/ytdecode";
-function getContent($content) {
-    global $tmpFile;
+function getContent($content,$file) {
     $ch = curl_init();
     curl_setopt($ch, CURLOPT_USERAGENT, "Mozilla/5.0 (X11; Linux x86_64; rv:40.0) Gecko/20100101 Firefox/40.0");
     curl_setopt($ch, CURLOPT_URL, $content);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-    curl_setopt($ch, CURLOPT_FILE, fopen($tmpFile,"w+"));
+    curl_setopt($ch, CURLOPT_FILE, fopen($file,"w+"));
     $ret = curl_exec($ch);
     if(!$ret) {
         echo curl_error($ch);
@@ -31,7 +30,7 @@ function searchInFile($regex,$file) {
         return false;
     }    
 }
-if(!getContent("https://www.youtube.com/watch?v=jNQXAC9IVRw")) die('Can\'t access youtube');
+if(!getContent("https://www.youtube.com/watch?v=jNQXAC9IVRw",$tmpFile)) die('Can\'t access youtube');
 $ythtml = file_get_contents($tmpFile);
 preg_match('/ytplayer.config = {(.*?)};/',$ythtml,$match);
 $ytconfig = json_decode('{'.$match[1].'}');
@@ -45,7 +44,7 @@ if(preg_match("/".$match[1]."/",$actual)){
     if(substr($js, 0, 2) === "//") {
         $js = "https:".$js;
     }
-    if(!getContent($js)) die('Can\'t access htmlplayer');
+    if(!getContent($js,$tmpFile)) die('Can\'t access htmlplayer');
     $signatureCode = searchInFile("/\(.=(.*)\(.*\),.*=.*\(.*,\"\/signature\/\"\+.*\)\);/",$tmpFile);
     // var_dump($signatureCode);
     $signatureCode2 = searchInFile("/function ".str_replace("$",'\$',$signatureCode[1])."\\((.*?)\\){(.*?)return(.*?)};/",$tmpFile);
