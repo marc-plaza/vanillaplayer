@@ -546,7 +546,9 @@
                 }, true);
                 this.nodes.timeBarContainer.addEventListener("click", function(evt) {
                     var position = evt.clientX - self.nodes.timeBarContainer.getBoundingClientRect().left;
-                    self.nodes.mediaNode.currentTime = (position * self.nodes.mediaNode.duration) / self.nodes.timeBarContainer.clientWidth;
+                    if (!isNaN(self.nodes.mediaNode.duration)) {
+                        self.nodes.mediaNode.currentTime = (position * self.nodes.mediaNode.duration) / self.nodes.timeBarContainer.clientWidth;
+                    }
                     evt.stopImmediatePropagation();
                 }, true);
                 this.nodes.volumeBarContainer.addEventListener("click", function(evt) {
@@ -592,7 +594,9 @@
                         if (position > self.nodes.timeBarContainer.clientWidth) {
                             position = self.nodes.timeBarContainer.clientWidth;
                         }
-                        self.nodes.mediaNode.currentTime = (position * self.nodes.mediaNode.duration) / self.nodes.timeBarContainer.clientWidth;
+                        if (!isNaN(self.nodes.mediaNode.duration)) {
+                            self.nodes.mediaNode.currentTime = (position * self.nodes.mediaNode.duration) / self.nodes.timeBarContainer.clientWidth;
+                        }
                     }
                 };
                 var timeMouseUpListener = function(evt) {
