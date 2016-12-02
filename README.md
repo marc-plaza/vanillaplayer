@@ -3,7 +3,7 @@
 Vanilla JS HTML5 Player
 
 * Pure Javascript player, can read any file supported by the <video> element.
-* Can read video from youtube via urls.
+* Could read video from youtube via urls. (Outdated)
 
 TODO:
 
